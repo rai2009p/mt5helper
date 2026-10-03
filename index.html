@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ChartSense</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 60px auto; padding: 0 20px; }
+    input, textarea, button { display: block; width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box; }
+    textarea { font-family: inherit; resize: vertical; }
+    #result { margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; display: none; white-space: pre-wrap; }
+    #disclaimer { font-size: 12px; color: #888; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>ChartSense</h1>
+  <p>Upload a chart screenshot for an AI read on trend, patterns, and key levels.</p>
+
+  <label>Chart screenshot:</label>
+  <input type="file" id="chartFile" accept="image/*">
+
+  <label>Extra context (optional):</label>
+  <textarea id="notes" rows="3" placeholder="e.g. EURUSD H1, news: NFP released today, I'm considering a long..."></textarea>
+
+  <button onclick="analyzeChart()">Analyze</button>
+
+  <div id="result"></div>
+  <div id="disclaimer">This is AI-generated analysis, not financial advice or a guaranteed signal. Always use your own judgment and risk management.</div>
+
+  <script>
+    function fileToBase64(file) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () { resolve(reader.result.split(',')[1]); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function analyzeChart() {
+      var file = document.getElementById('chartFile').files[0];
+      var notes = document.getElementById('notes').value;
+      var box = document.getElementById('result');
+      box.style.display = 'block';
+
+      if (!file) {
+        box.textContent = 'Please upload a chart screenshot.';
+        return;
+      }
+
+      box.textContent = 'Analyzing... this can take up to 20 seconds.';
+
+      try {
+        var base64 = await fileToBase64(file);
+        var response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64, mimeType: file.type || 'image/png', notes: notes })
+        });
+        var data = await response.json();
+        box.textContent = data.message;
+      } catch (e) {
+        box.textContent = 'Something went wrong. Please try again.';
+      }
+    }
+  </script>
+</body>
+</html>
